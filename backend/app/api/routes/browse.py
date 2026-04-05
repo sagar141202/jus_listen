@@ -10,6 +10,7 @@ from app.services import (
     ContentNotFoundError,
     YTMusicError,
     YTMusicRateLimitError,
+    get_album_details,
     get_artist_details,
     get_home_feed,
     get_song_details,
@@ -340,9 +341,96 @@ async def browse_artist(artist_id: str):
 
 
 @router.get("/album/{album_id}")
+@limiter.limit("60/minute")
 async def browse_album(album_id: str):
-    """Get album details."""
-    return {"data": {"album": None}}
+    """
+    Get album details.
+
+    Args:
+        album_id: YouTube Music album ID
+
+    Returns:
+        dict: Album details with track listing
+
+    Raises:
+        HTTPException: 404 for not found, 429 for rate limit, 500 for other errors
+    """
+    try:
+        # Get album details
+        details = await get_album_details(album_id)
+        album = details.album
+
+        # Serialize tracks
+        tracks = [
+            {
+                "videoId": song.video_id,
+                "title": song.title,
+                "artist": song.artist,
+                "artistId": song.artist_id,
+                "duration": song.duration,
+                "thumbnail": song.thumbnail,
+                "explicit": song.explicit,
+            }
+            for song in details.tracks
+        ]
+
+        return {
+            "data": {
+                "album": {
+                    "albumId": album.album_id,
+                    "title": album.title,
+                    "artist": album.artist,
+                    "artistId": album.artist_id,
+                    "year": album.year,
+                    "thumbnail": album.thumbnail,
+                    "trackCount": album.track_count,
+                    "duration": album.duration,
+                    "description": details.description or album.description,
+                },
+                "tracks": tracks,
+            },
+            "meta": {
+                "albumId": album_id,
+                "tracksCount": len(tracks),
+            },
+        }
+
+    except ContentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": False,
+            },
+        ) from e
+    except YTMusicRateLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except YTMusicError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": f"Failed to get album details: {str(e)}",
+                "code": "ALBUM_DETAILS_FAILED",
+                "retryable": True,
+            },
+        ) from e
 
 
 @router.get("/playlist/{playlist_id}")
