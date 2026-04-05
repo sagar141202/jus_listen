@@ -1,0 +1,129 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Frontend - Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+frontend/*.log
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnpm-debug.log*
+
+# Frontend - TypeScript
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Frontend - Testing
+frontend/coverage/
+frontend/.nyc_output/
+
+# Frontend - Build
+frontend/build/
+
+# Backend - Python
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+backend/*.so
+backend/.Python
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
+backend/MANIFEST
+
+# Backend - Virtual environments
+backend/venv/
+backend/env/
+backend/ENV/
+backend/.venv
+backend/.env
+backend/env.bak/
+backend/venv.bak/
+
+# Backend - Pytest
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+backend/.tox/
+
+# Backend - MyPy
+backend/.mypy_cache/
+backend/.dmypy.json
+backend/dmypy.json
+
+# Backend - IDE
+backend/.idea/
+backend/.vscode/
+backend/*.swp
+backend/*.swo
+
+# Database
+postgres_data/
+redis_data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Misc
+.cache/
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Certificates
+*.pem
+*.key
+*.crt
+
+# Build artifacts
+*.tar.gz
+*.zip
