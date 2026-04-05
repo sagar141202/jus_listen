@@ -45,7 +45,7 @@
 - [x] Implement GET /api/browse/playlist/{playlist_id}
 - [x] Implement GET /api/lyrics/{video_id}
 - [x] Add rate limiting (slowapi, 60 req/min per IP)
-- [ ] Commit Phase 3
+- [x] Commit Phase 3
 
 ## Phase 4: Player UI (waveform, controls, queue, progress)
 - [ ] Create base layout (Sidebar + Main + Now Playing Bar)
