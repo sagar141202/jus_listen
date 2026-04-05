@@ -1,64 +1,90 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { SongCard } from "@/components/player/SongCard";
+import { Song } from "@/types";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
+  const [sections, setSections] = useState<{ title: string; items: Song[] }[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
+    const fetchHomeFeed = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/browse/home`);
+        const data = await response.json();
+        if (data.data?.sections) {
+          const mappedSections = data.data.sections
+            .filter((section: { type: string }) => section.type === "quick_picks" || section.type === "trending")
+            .map((section: { title: string; contents: Song[] }) => ({
+              title: section.title,
+              items: section.contents.filter((item): item is Song => "videoId" in item).slice(0, 6),
+            }));
+          setSections(mappedSections);
+        }
+      } catch (error) {
+        console.error("Failed to fetch home feed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHomeFeed();
   }, []);
 
-  if (!mounted) {
-    return null;
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="animate-pulse space-y-8">
+          <div className="h-8 w-48 bg-surface-elevated rounded" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="space-y-3">
+                <div className="aspect-square bg-surface-elevated rounded-xl" />
+                <div className="h-4 bg-surface-elevated rounded w-3/4" />
+                <div className="h-3 bg-surface-elevated rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
-      {/* Background gradient effect */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[120px] liquid-bg"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] liquid-bg"></div>
-      </div>
-
-      {/* Main content */}
-      <div className="relative z-10 text-center max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-6xl md:text-8xl font-bold mb-4 tracking-tight">
-            <span className="text-accent">t</span>uniq
-          </h1>
-          <p className="text-xl md:text-2xl text-text-secondary">
-            Your music. No limits. No ads.
-          </p>
-        </div>
-
-        <div className="glass rounded-2xl p-8 mb-8">
-          <h2 className="text-section font-semibold mb-4">Coming Soon</h2>
-          <p className="text-text-secondary mb-6">
-            We&apos;re building the ultimate self-hosted music streaming experience.
-            Check back soon for updates.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-text-secondary">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              Ad-free streaming
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              Premium features
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              Self-hosted
-            </div>
+    <div className="p-8 pb-32 space-y-12">
+      {sections.map((section, sectionIndex) => (
+        <motion.section
+          key={section.title}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: sectionIndex * 0.1 }}
+        >
+          <h2 className="text-section font-bold mb-6">{section.title}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {section.items.map((song, index) => (
+              <motion.div
+                key={song.videoId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <SongCard song={song} context={section.title} />
+              </motion.div>
+            ))}
           </div>
-        </div>
+        </motion.section>
+      ))}
 
-        <footer className="text-text-secondary text-secondary">
-          Built with ❤️ by Sagar Maddi
-        </footer>
-      </div>
+      {sections.length === 0 && (
+        <div className="flex flex-col items-center justify-center h-96 text-text-secondary">
+          <p className="text-xl">Welcome to tuniq</p>
+          <p className="text-secondary mt-2">Start exploring music</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -48,15 +48,15 @@
 - [x] Commit Phase 3
 
 ## Phase 4: Player UI (waveform, controls, queue, progress)
-- [ ] Create base layout (Sidebar + Main + Now Playing Bar)
-- [ ] Build Song Card component with context menu
-- [ ] Build Now Playing Bar with controls
-- [ ] Build Full Screen Player with wave visualizer
-- [ ] Build Queue Panel with drag-to-reorder
-- [ ] Build Lyrics component with auto-scroll
-- [ ] Create audioEngine module (HTMLAudioElement, Web Audio API)
-- [ ] Implement playerStore (Zustand)
-- [ ] Implement uiStore (Zustand)
+- [x] Create base layout (Sidebar + Main + Now Playing Bar)
+- [x] Build Song Card component with context menu
+- [x] Build Now Playing Bar with controls
+- [x] Build Full Screen Player with wave visualizer
+- [x] Build Queue Panel with drag-to-reorder
+- [x] Build Lyrics component with auto-scroll
+- [x] Create audioEngine module (HTMLAudioElement, Web Audio API)
+- [x] Implement playerStore (Zustand)
+- [x] Implement uiStore (Zustand)
 - [ ] Test: Play, pause, seek, queue, lyrics all working
 - [ ] Commit Phase 4
 

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PlayerProvider } from "@/components/providers/PlayerProvider";
 
 export const metadata: Metadata = {
   title: "tuniq - Your music. No limits. No ads.",
@@ -43,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased min-h-screen" suppressHydrationWarning>
-        {children}
+        <PlayerProvider>{children}</PlayerProvider>
       </body>
     </html>
   );
