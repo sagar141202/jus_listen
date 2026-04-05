@@ -11,6 +11,7 @@ from app.services import (
     YTMusicError,
     YTMusicRateLimitError,
     get_home_feed,
+    get_song_details,
 )
 
 router = APIRouter(prefix="/browse", tags=["browse"])
@@ -135,9 +136,88 @@ async def browse_home():
 
 
 @router.get("/song/{video_id}")
+@limiter.limit("60/minute")
 async def browse_song(video_id: str):
-    """Get song details with queue suggestions."""
-    return {"data": {"song": None, "queue": [], "related": []}}
+    """
+    Get song details with queue suggestions.
+
+    Args:
+        video_id: YouTube video ID
+
+    Returns:
+        dict: Song details with main song, queue suggestions, and related songs
+
+    Raises:
+        HTTPException: 404 for not found, 429 for rate limit, 500 for other errors
+    """
+    try:
+        # Get song details with queue suggestions
+        details = await get_song_details(video_id)
+
+        # Serialize song data
+        def serialize_song(song):
+            return {
+                "videoId": song.video_id,
+                "title": song.title,
+                "artist": song.artist,
+                "artistId": song.artist_id,
+                "album": song.album,
+                "albumId": song.album_id,
+                "duration": song.duration,
+                "thumbnail": song.thumbnail,
+                "explicit": song.explicit,
+                "year": song.year,
+            }
+
+        return {
+            "data": {
+                "song": serialize_song(details.song),
+                "queue": [serialize_song(s) for s in details.queue],
+                "related": [serialize_song(s) for s in details.related],
+            },
+            "meta": {
+                "videoId": video_id,
+                "queueCount": len(details.queue),
+                "relatedCount": len(details.related),
+            },
+        }
+
+    except ContentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": False,
+            },
+        ) from e
+    except YTMusicRateLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except YTMusicError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": f"Failed to get song details: {str(e)}",
+                "code": "SONG_DETAILS_FAILED",
+                "retryable": True,
+            },
+        ) from e
 
 
 @router.get("/artist/{artist_id}")
