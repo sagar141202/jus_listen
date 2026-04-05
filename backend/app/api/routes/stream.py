@@ -10,6 +10,8 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -28,6 +30,9 @@ from app.services.ytdlp_service import (
 )
 
 router = APIRouter(prefix="/stream", tags=["stream"])
+
+# Rate limiter for stream endpoints
+limiter = Limiter(key_func=get_remote_address)
 
 
 class StreamResponse(BaseModel):
@@ -76,6 +81,7 @@ def _stream_info_to_dict(obj: Any) -> dict:
         422: {"model": ErrorResponse, "description": "Stream unavailable"},
     },
 )
+@limiter.limit("60/minute")
 async def get_stream(video_id: str) -> dict:
     """
     Get stream URL for a YouTube video.
@@ -148,6 +154,7 @@ async def get_stream(video_id: str) -> dict:
         429: {"model": ErrorResponse, "description": "Rate limited"},
     },
 )
+@limiter.limit("60/minute")
 async def proxy_stream(video_id: str, request: Request) -> StreamingResponse:
     """
     Proxy audio stream with Range header support for seeking.
@@ -239,6 +246,7 @@ async def proxy_stream(video_id: str, request: Request) -> StreamingResponse:
 
 
 @router.get("/{video_id}/health")
+@limiter.limit("60/minute")
 async def check_stream_health(video_id: str) -> dict:
     """
     Check if a stream is healthy and available.
