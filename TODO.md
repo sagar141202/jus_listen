@@ -41,7 +41,7 @@
 - [x] Implement GET /api/browse/home (quick picks, listen again)
 - [x] Implement GET /api/browse/song/{video_id} with queue suggestions
 - [x] Implement GET /api/browse/artist/{artist_id}
-- [ ] Implement GET /api/browse/album/{album_id}
+- [x] Implement GET /api/browse/album/{album_id}
 - [ ] Implement GET /api/browse/playlist/{playlist_id}
 - [ ] Implement GET /api/lyrics/{video_id}
 - [ ] Add rate limiting (slowapi, 60 req/min per IP)
