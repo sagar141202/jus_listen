@@ -10,6 +10,7 @@ from app.services import (
     ContentNotFoundError,
     YTMusicError,
     YTMusicRateLimitError,
+    get_artist_details,
     get_home_feed,
     get_song_details,
 )
@@ -221,9 +222,121 @@ async def browse_song(video_id: str):
 
 
 @router.get("/artist/{artist_id}")
+@limiter.limit("60/minute")
 async def browse_artist(artist_id: str):
-    """Get artist details."""
-    return {"data": {"artist": None}}
+    """
+    Get artist details.
+
+    Args:
+        artist_id: YouTube Music artist ID
+
+    Returns:
+        dict: Artist details with top songs, albums, singles, and similar artists
+
+    Raises:
+        HTTPException: 404 for not found, 429 for rate limit, 500 for other errors
+    """
+    try:
+        # Get artist details
+        details = await get_artist_details(artist_id)
+        artist = details.artist
+
+        # Serialize song data helper
+        def serialize_song(song):
+            return {
+                "videoId": song.video_id,
+                "title": song.title,
+                "artist": song.artist,
+                "artistId": song.artist_id,
+                "album": song.album,
+                "albumId": song.album_id,
+                "duration": song.duration,
+                "thumbnail": song.thumbnail,
+                "explicit": song.explicit,
+                "year": song.year,
+            }
+
+        # Serialize album data helper
+        def serialize_album(album):
+            return {
+                "albumId": album.album_id,
+                "title": album.title,
+                "artist": album.artist,
+                "artistId": album.artist_id,
+                "year": album.year,
+                "thumbnail": album.thumbnail,
+                "trackCount": album.track_count,
+                "duration": album.duration,
+            }
+
+        return {
+            "data": {
+                "artist": {
+                    "artistId": artist.artist_id,
+                    "name": artist.name,
+                    "thumbnail": artist.thumbnail,
+                    "description": artist.description,
+                    "views": artist.views,
+                    "songsCount": artist.songs_count,
+                    "subscribers": artist.subscribers,
+                },
+                "topSongs": [serialize_song(s) for s in details.top_songs],
+                "albums": [serialize_album(a) for a in details.albums],
+                "singles": [serialize_song(s) for s in details.singles],
+                "similarArtists": [
+                    {
+                        "artistId": ar.artist_id,
+                        "name": ar.name,
+                        "thumbnail": ar.thumbnail,
+                    }
+                    for ar in details.similar_artists
+                ],
+            },
+            "meta": {
+                "artistId": artist_id,
+                "topSongsCount": len(details.top_songs),
+                "albumsCount": len(details.albums),
+                "singlesCount": len(details.singles),
+                "similarArtistsCount": len(details.similar_artists),
+            },
+        }
+
+    except ContentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": False,
+            },
+        ) from e
+    except YTMusicRateLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except YTMusicError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": f"Failed to get artist details: {str(e)}",
+                "code": "ARTIST_DETAILS_FAILED",
+                "retryable": True,
+            },
+        ) from e
 
 
 @router.get("/album/{album_id}")
