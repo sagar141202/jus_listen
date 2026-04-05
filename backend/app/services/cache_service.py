@@ -40,13 +40,13 @@ def get_lyrics_key(video_id: str) -> str:
 
 def get_cached_stream_url(video_id: str) -> Optional[dict]:
     """
-    Get cached stream URL for a video.
+    Get cached stream info for a video.
 
     Args:
         video_id: YouTube video ID
 
     Returns:
-        dict with url and expires_at, or None if not found
+        dict with stream info, or None if not found
     """
     key = get_stream_key(video_id)
     data = redis_client.get(key)
@@ -67,6 +67,19 @@ def cache_stream_url(video_id: str, stream_url: str, ttl: int = STREAM_URL_TTL) 
     key = get_stream_key(video_id)
     data = json.dumps({"url": stream_url, "expires_at": ttl})
     redis_client.setex(key, ttl, data)
+
+
+def cache_stream_info(video_id: str, stream_info: dict, ttl: int = STREAM_URL_TTL) -> None:
+    """
+    Cache full stream info for a video.
+
+    Args:
+        video_id: YouTube video ID
+        stream_info: Dictionary containing stream_url, format, bitrate, etc.
+        ttl: Time to live in seconds
+    """
+    key = get_stream_key(video_id)
+    redis_client.setex(key, ttl, json.dumps(stream_info))
 
 
 def get_cached_search(query: str, search_type: str) -> Optional[dict]:

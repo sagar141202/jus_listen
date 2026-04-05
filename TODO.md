@@ -26,10 +26,12 @@
 - [x] Commit Phase 1
 
 ## Phase 2: Audio Streaming Pipeline (yt-dlp + FastAPI proxy)
-- [ ] Create ytdlp_service.py with ThreadPoolExecutor
-- [ ] Implement GET /api/stream/{video_id} with Redis caching (6h TTL)
-- [ ] Handle edge cases: geo-blocked (451), deleted (404), rate limit (429)
-- [ ] Add Range header support for seeking
+- [x] Create ytdlp_service.py with ThreadPoolExecutor
+- [x] Implement GET /api/stream/{video_id} with Redis caching (6h TTL)
+- [x] Handle edge cases: geo-blocked (451), deleted (404), rate limit (429)
+- [x] Add Range header support for seeking via /api/stream/{video_id}/proxy
+- [x] Add StreamInfo dataclass with metadata (title, artist, thumbnail, duration)
+- [x] Add stream health check endpoint /api/stream/{video_id}/health
 - [ ] Test stream extraction and playback in browser
 - [ ] Commit Phase 2
 

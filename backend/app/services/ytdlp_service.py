@@ -1,9 +1,15 @@
 """
-yt-dlp service for audio stream extraction.
+yt-dlp service with ThreadPoolExecutor for async stream extraction.
+Handles edge cases: geo-blocked (451), deleted (404), rate limit (429).
 """
 
+from __future__ import annotations
+
 import asyncio
+import re
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import Optional
 
 import yt_dlp
@@ -25,26 +31,132 @@ YTDLP_OPTIONS = {
     "extractor_retries": 3,
 }
 
-# Format preferences (best audio quality)
-AUDIO_FORMATS = [
-    "opus",
-    "webm",
-    "m4a",
-    "mp4",
-]
+
+@dataclass
+class StreamInfo:
+    """Stream information returned by yt-dlp extraction."""
+
+    video_id: str
+    stream_url: str
+    format: str
+    bitrate: int | None
+    expires_at: datetime
+    duration: int | None = None  # in seconds
+    title: str | None = None
+    artist: str | None = None
+    thumbnail: str | None = None
 
 
-class StreamExtractionError(Exception):
-    """Custom exception for stream extraction errors."""
+class YtdlpError(Exception):
+    """Base exception for yt-dlp errors."""
 
-    def __init__(self, message: str, code: str, retryable: bool = True):
+    def __init__(self, message: str, status_code: int = 500):
         self.message = message
-        self.code = code
-        self.retryable = retryable
+        self.status_code = status_code
         super().__init__(self.message)
 
 
-def _extract_stream_sync(video_id: str) -> dict:
+class VideoNotFoundError(YtdlpError):
+    """Video deleted or not found (404)."""
+
+    def __init__(self, video_id: str):
+        super().__init__(f"Video {video_id} not found or deleted", 404)
+
+
+class GeoBlockedError(YtdlpError):
+    """Video geo-blocked (451)."""
+
+    def __init__(self, video_id: str, country: str | None = None):
+        msg = f"Video {video_id} is not available"
+        if country:
+            msg += f" in {country}"
+        super().__init__(msg, 451)
+
+
+class RateLimitError(YtdlpError):
+    """Rate limited by YouTube (429)."""
+
+    def __init__(self, video_id: str):
+        super().__init__(f"Rate limited while accessing {video_id}. Please try again later.", 429)
+
+
+class AgeRestrictedError(YtdlpError):
+    """Video is age-restricted (403)."""
+
+    def __init__(self, video_id: str):
+        super().__init__(f"Video {video_id} is age-restricted", 403)
+
+
+def _parse_ytdlp_error(stderr: str, video_id: str) -> YtdlpError:
+    """
+    Parse yt-dlp stderr and return appropriate exception type.
+
+    Args:
+        stderr: Error output from yt-dlp
+        video_id: YouTube video ID
+
+    Returns:
+        Appropriate YtdlpError subclass
+    """
+    stderr_lower = stderr.lower()
+
+    # Check for specific error patterns
+    if any(
+        pattern in stderr_lower
+        for pattern in [
+            "video unavailable",
+            "removed",
+            "private video",
+            "deleted",
+            "not found",
+            "content warning",
+            "removed by",
+        ]
+    ):
+        return VideoNotFoundError(video_id)
+
+    if any(
+        pattern in stderr_lower
+        for pattern in [
+            "unavailable in your country",
+            "not available in",
+            "geo-blocked",
+            "geoblock",
+            "blocked",
+            "451",
+        ]
+    ):
+        return GeoBlockedError(video_id)
+
+    if any(
+        pattern in stderr_lower
+        for pattern in [
+            "rate limit",
+            "too many requests",
+            "429",
+            "ip blocked",
+            "sign in",
+            "verify you're not a robot",
+        ]
+    ):
+        return RateLimitError(video_id)
+
+    if any(
+        pattern in stderr_lower
+        for pattern in [
+            "age-restricted",
+            "age restricted",
+            "mature content",
+            "sign in to confirm",
+        ]
+    ):
+        return AgeRestrictedError(video_id)
+
+    # Generic error
+    return YtdlpError(f"yt-dlp extraction failed: {stderr[:200]}", 500)
+
+
+def _extract_stream_sync(video_id: str) -> StreamInfo:
     """
     Synchronously extract audio stream URL from YouTube.
 
@@ -52,16 +164,22 @@ def _extract_stream_sync(video_id: str) -> dict:
         video_id: YouTube video ID
 
     Returns:
-        dict with url, format info, and duration
+        StreamInfo with extracted stream details
 
     Raises:
-        StreamExtractionError: For various failure modes
+        YtdlpError: If extraction fails
     """
     url = f"https://www.youtube.com/watch?v={video_id}"
 
     ydl_opts = {
         **YTDLP_OPTIONS,
         "format_sort": ["abr"],  # Sort by audio bitrate
+        "extractor_args": {
+            "youtube": {
+                "player_client": ["android"],
+                "player_skip": ["webpage", "configs", "js"],
+            }
+        },
     }
 
     try:
@@ -69,11 +187,7 @@ def _extract_stream_sync(video_id: str) -> dict:
             info = ydl.extract_info(url, download=False)
 
             if not info:
-                raise StreamExtractionError(
-                    "Could not extract video information",
-                    "EXTRACTION_FAILED",
-                    retryable=True,
-                )
+                raise VideoNotFoundError(video_id)
 
             # Get best audio format
             formats = info.get("formats", [])
@@ -87,92 +201,73 @@ def _extract_stream_sync(video_id: str) -> dict:
                 audio_formats = [f for f in formats if f.get("acodec") != "none"]
 
             if not audio_formats:
-                raise StreamExtractionError(
-                    "No audio stream available",
-                    "NO_AUDIO_FORMAT",
-                    retryable=False,
-                )
+                raise YtdlpError(f"No audio stream available for {video_id}", 404)
 
             # Sort by bitrate (highest first)
             audio_formats.sort(key=lambda x: x.get("abr", 0) or 0, reverse=True)
             best_format = audio_formats[0]
 
-            return {
-                "url": best_format["url"],
-                "format": best_format.get("ext", "unknown"),
-                "bitrate": best_format.get("abr", 0),
-                "duration": info.get("duration", 0),
-                "title": info.get("title", ""),
-                "thumbnail": info.get("thumbnail", ""),
-            }
+            stream_url = best_format.get("url")
+            if not stream_url:
+                raise YtdlpError(f"No stream URL found for {video_id}", 404)
 
-    except yt_dlp.utils.ExtractorError as e:
-        error_msg = str(e).lower()
+            # Parse format info
+            fmt = best_format.get("ext", best_format.get("format_id", "unknown"))
+            bitrate = int(best_format.get("tbr", 0)) if best_format.get("tbr") else None
+            duration = int(info.get("duration", 0)) if info.get("duration") else None
 
-        if "private" in error_msg or "unavailable" in error_msg:
-            raise StreamExtractionError(
-                "This video is private or unavailable",
-                "VIDEO_UNAVAILABLE",
-                retryable=False,
-            )
-        elif "geoblocked" in error_msg or "not available" in error_msg:
-            raise StreamExtractionError(
-                "This video is not available in your region",
-                "GEOBLOCKED",
-                retryable=False,
-            )
-        elif "membership" in error_msg or "premium" in error_msg:
-            raise StreamExtractionError(
-                "This video requires membership or premium",
-                "MEMBERSHIP_REQUIRED",
-                retryable=False,
-            )
-        else:
-            raise StreamExtractionError(
-                f"Extraction error: {str(e)}",
-                "EXTRACTION_ERROR",
-                retryable=True,
+            # Stream URLs expire in ~6 hours from YouTube
+            expires_at = datetime.utcnow() + timedelta(hours=6)
+
+            return StreamInfo(
+                video_id=video_id,
+                stream_url=stream_url,
+                format=fmt,
+                bitrate=bitrate,
+                expires_at=expires_at,
+                duration=duration,
+                title=info.get("title"),
+                artist=info.get("artist") or info.get("channel"),
+                thumbnail=info.get("thumbnail"),
             )
 
     except yt_dlp.utils.DownloadError as e:
-        error_msg = str(e).lower()
-
-        if "not found" in error_msg or "unavailable" in error_msg:
-            raise StreamExtractionError(
-                "Video not found",
-                "VIDEO_NOT_FOUND",
-                retryable=False,
-            )
-        elif "rate limit" in error_msg or "too many" in error_msg:
-            raise StreamExtractionError(
-                "Rate limited by YouTube. Please try again later.",
-                "RATE_LIMITED",
-                retryable=True,
-            )
-        elif "sign in" in error_msg or "login" in error_msg:
-            raise StreamExtractionError(
-                "This video requires authentication",
-                "AUTH_REQUIRED",
-                retryable=False,
-            )
-        else:
-            raise StreamExtractionError(
-                f"Download error: {str(e)}",
-                "DOWNLOAD_ERROR",
-                retryable=True,
-            )
-
+        error_msg = str(e)
+        raise _parse_ytdlp_error(error_msg, video_id) from e
     except Exception as e:
-        raise StreamExtractionError(
-            f"Unexpected error: {str(e)}",
-            "UNKNOWN_ERROR",
-            retryable=True,
+        raise YtdlpError(f"Extraction failed: {str(e)[:200]}", 500) from e
+
+
+async def extract_stream(video_id: str) -> StreamInfo:
+    """
+    Async wrapper for yt-dlp extraction using ThreadPoolExecutor.
+
+    Args:
+        video_id: YouTube video ID
+
+    Returns:
+        StreamInfo with stream details
+
+    Raises:
+        YtdlpError: If extraction fails with specific error types
+    """
+    loop = asyncio.get_event_loop()
+
+    try:
+        # Run blocking yt-dlp in thread pool
+        result = await asyncio.wait_for(
+            loop.run_in_executor(executor, _extract_stream_sync, video_id),
+            timeout=30.0
         )
+        return result
+    except TimeoutError:
+        raise YtdlpError("Extraction timed out. Please try again.", 504) from None
 
 
+# Backward compatibility alias
 async def extract_audio_stream(video_id: str) -> dict:
     """
-    Async wrapper for audio stream extraction.
+    Async wrapper for audio stream extraction (backward compatibility).
 
     Args:
         video_id: YouTube video ID
@@ -181,49 +276,40 @@ async def extract_audio_stream(video_id: str) -> dict:
         dict with stream information
 
     Raises:
-        HTTPException: Translated from StreamExtractionError
+        HTTPException: Translated from YtdlpError
     """
-    loop = asyncio.get_event_loop()
-
     try:
-        # Run extraction in thread pool
-        result = await asyncio.wait_for(
-            loop.run_in_executor(executor, _extract_stream_sync, video_id),
-            timeout=20.0,
-        )
-        return result
-
-    except asyncio.TimeoutError:
-        raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail={
-                "error": "Stream extraction timed out",
-                "code": "EXTRACTION_TIMEOUT",
-                "retryable": True,
-            },
-        )
-
-    except StreamExtractionError as e:
+        result = await extract_stream(video_id)
+        return {
+            "url": result.stream_url,
+            "format": result.format,
+            "bitrate": result.bitrate,
+            "duration": result.duration,
+            "title": result.title,
+            "artist": result.artist,
+            "thumbnail": result.thumbnail,
+            "expires_at": result.expires_at.isoformat(),
+        }
+    except YtdlpError as e:
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-        if e.code == "VIDEO_NOT_FOUND":
+        if isinstance(e, VideoNotFoundError):
             status_code = status.HTTP_404_NOT_FOUND
-        elif e.code == "GEOBLOCKED":
+        elif isinstance(e, GeoBlockedError):
             status_code = status.HTTP_451_UNAVAILABLE_FOR_LEGAL_REASONS
-        elif e.code == "RATE_LIMITED":
+        elif isinstance(e, RateLimitError):
             status_code = status.HTTP_429_TOO_MANY_REQUESTS
-        elif e.code in ["VIDEO_UNAVAILABLE", "MEMBERSHIP_REQUIRED", "AUTH_REQUIRED"]:
+        elif isinstance(e, AgeRestrictedError):
             status_code = status.HTTP_403_FORBIDDEN
 
         raise HTTPException(
             status_code=status_code,
             detail={
                 "error": e.message,
-                "code": e.code,
-                "retryable": e.retryable,
+                "code": type(e).__name__.upper(),
+                "retryable": status_code in [500, 429, 504],
             },
-        )
-
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -232,7 +318,7 @@ async def extract_audio_stream(video_id: str) -> dict:
                 "code": "EXTRACTION_FAILED",
                 "retryable": True,
             },
-        )
+        ) from e
 
 
 def cleanup():
