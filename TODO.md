@@ -36,7 +36,7 @@
 - [x] Commit Phase 2
 
 ## Phase 3: YT Music API Integration (search, browse, recommendations)
-- [ ] Create ytmusic_service.py wrapper for ytmusicapi
+- [x] Create ytmusic_service.py wrapper for ytmusicapi
 - [ ] Implement GET /api/search with caching (10min)
 - [ ] Implement GET /api/browse/home (quick picks, listen again)
 - [ ] Implement GET /api/browse/song/{video_id} with queue suggestions
