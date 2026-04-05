@@ -1,0 +1,113 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: tuniq-nginx-dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - tuniq-net-dev
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: tuniq-frontend-dev
+    environment:
+      - NODE_ENV=development
+      - BACKEND_URL=http://backend:8000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - tuniq-net-dev
+    command: npm run dev
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: tuniq-backend-dev
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-tuniq}:${POSTGRES_PASSWORD:-tuniq}@postgres:5432/${POSTGRES_DB:-tuniq}
+      - REDIS_URL=redis://redis:6379/0
+      - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - YTM_COOKIE=${YTM_COOKIE}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - tuniq-net-dev
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tuniq-postgres-dev
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-tuniq}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-tuniq}
+      - POSTGRES_DB=${POSTGRES_DB:-tuniq}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - tuniq-net-dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tuniq}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tuniq-redis-dev
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - tuniq-net-dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data_dev:
+    name: tuniq_postgres_data_dev
+  redis_data_dev:
+    name: tuniq_redis_data_dev
+
+networks:
+  tuniq-net-dev:
+    name: tuniq-net-dev
+    driver: bridge

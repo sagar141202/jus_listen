@@ -8,22 +8,22 @@
 - [x] PROJECT_OVERVIEW.md
 
 ## Phase 1: Project Scaffold, Docker Setup, Base Layout
-- [ ] Initialize monorepo structure
-- [ ] Create docker-compose.yml with 5 services (nginx, frontend, backend, redis, postgres)
-- [ ] Create docker-compose.dev.yml with hot reload
-- [ ] Write nginx.conf for reverse proxy
-- [ ] Create .env.example
-- [ ] Create .gitignore
-- [ ] Frontend: Initialize Next.js 15 with TypeScript
-- [ ] Frontend: Install and configure Tailwind CSS v4
-- [ ] Frontend: Install shadcn/ui and base components
-- [ ] Frontend: Install Framer Motion, Zustand, TanStack Query
-- [ ] Backend: Create FastAPI project structure
-- [ ] Backend: Write requirements.txt with all dependencies
-- [ ] Backend: Configure pyproject.toml
-- [ ] Backend: Set up basic FastAPI main.py with health check
-- [ ] Test: docker compose up --build works end-to-end
-- [ ] Commit Phase 1
+- [x] Initialize monorepo structure
+- [x] Create docker-compose.yml with 5 services (nginx, frontend, backend, redis, postgres)
+- [x] Create docker-compose.dev.yml with hot reload
+- [x] Write nginx.conf for reverse proxy
+- [x] Create .env.example
+- [x] Create .gitignore
+- [x] Frontend: Initialize Next.js 15 with TypeScript
+- [x] Frontend: Install and configure Tailwind CSS v4
+- [x] Frontend: Install shadcn/ui and base components
+- [x] Frontend: Install Framer Motion, Zustand, TanStack Query
+- [x] Backend: Create FastAPI project structure
+- [x] Backend: Write requirements.txt with all dependencies
+- [x] Backend: Configure pyproject.toml
+- [x] Backend: Set up basic FastAPI main.py with health check
+- [x] Test: docker compose up --build works end-to-end
+- [x] Commit Phase 1
 
 ## Phase 2: Audio Streaming Pipeline (yt-dlp + FastAPI proxy)
 - [ ] Create ytdlp_service.py with ThreadPoolExecutor
