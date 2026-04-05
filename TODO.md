@@ -39,7 +39,7 @@
 - [x] Create ytmusic_service.py wrapper for ytmusicapi
 - [x] Implement GET /api/search with caching (10min)
 - [x] Implement GET /api/browse/home (quick picks, listen again)
-- [ ] Implement GET /api/browse/song/{video_id} with queue suggestions
+- [x] Implement GET /api/browse/song/{video_id} with queue suggestions
 - [ ] Implement GET /api/browse/artist/{artist_id}
 - [ ] Implement GET /api/browse/album/{album_id}
 - [ ] Implement GET /api/browse/playlist/{playlist_id}
