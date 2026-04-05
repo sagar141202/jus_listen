@@ -32,8 +32,8 @@
 - [x] Add Range header support for seeking via /api/stream/{video_id}/proxy
 - [x] Add StreamInfo dataclass with metadata (title, artist, thumbnail, duration)
 - [x] Add stream health check endpoint /api/stream/{video_id}/health
-- [ ] Test stream extraction and playback in browser
-- [ ] Commit Phase 2
+- [x] Test stream extraction and playback in browser
+- [x] Commit Phase 2
 
 ## Phase 3: YT Music API Integration (search, browse, recommendations)
 - [ ] Create ytmusic_service.py wrapper for ytmusicapi
