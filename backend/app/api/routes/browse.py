@@ -13,6 +13,7 @@ from app.services import (
     get_album_details,
     get_artist_details,
     get_home_feed,
+    get_playlist_details,
     get_song_details,
 )
 
@@ -434,6 +435,92 @@ async def browse_album(album_id: str):
 
 
 @router.get("/playlist/{playlist_id}")
+@limiter.limit("60/minute")
 async def browse_playlist(playlist_id: str):
-    """Get playlist details."""
-    return {"data": {"playlist": None}}
+    """
+    Get playlist details.
+
+    Args:
+        playlist_id: YouTube Music playlist ID
+
+    Returns:
+        dict: Playlist details with track listing
+
+    Raises:
+        HTTPException: 404 for not found, 429 for rate limit, 500 for other errors
+    """
+    try:
+        # Get playlist details
+        details = await get_playlist_details(playlist_id)
+        playlist = details.playlist
+
+        # Serialize tracks
+        tracks = [
+            {
+                "videoId": song.video_id,
+                "title": song.title,
+                "artist": song.artist,
+                "artistId": song.artist_id,
+                "album": song.album,
+                "albumId": song.album_id,
+                "duration": song.duration,
+                "thumbnail": song.thumbnail,
+                "explicit": song.explicit,
+            }
+            for song in details.tracks
+        ]
+
+        return {
+            "data": {
+                "playlist": {
+                    "playlistId": playlist.playlist_id,
+                    "title": playlist.title,
+                    "author": playlist.author,
+                    "thumbnail": playlist.thumbnail,
+                    "trackCount": playlist.track_count,
+                    "description": playlist.description,
+                },
+                "tracks": tracks,
+            },
+            "meta": {
+                "playlistId": playlist_id,
+                "tracksCount": len(tracks),
+            },
+        }
+
+    except ContentNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": False,
+            },
+        ) from e
+    except YTMusicRateLimitError as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except YTMusicError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": e.message,
+                "code": e.code,
+                "retryable": True,
+            },
+        ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": f"Failed to get playlist details: {str(e)}",
+                "code": "PLAYLIST_DETAILS_FAILED",
+                "retryable": True,
+            },
+        ) from e
