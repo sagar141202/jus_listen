@@ -37,7 +37,7 @@
 
 ## Phase 3: YT Music API Integration (search, browse, recommendations)
 - [x] Create ytmusic_service.py wrapper for ytmusicapi
-- [ ] Implement GET /api/search with caching (10min)
+- [x] Implement GET /api/search with caching (10min)
 - [ ] Implement GET /api/browse/home (quick picks, listen again)
 - [ ] Implement GET /api/browse/song/{video_id} with queue suggestions
 - [ ] Implement GET /api/browse/artist/{artist_id}
