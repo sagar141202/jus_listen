@@ -43,7 +43,7 @@
 - [x] Implement GET /api/browse/artist/{artist_id}
 - [x] Implement GET /api/browse/album/{album_id}
 - [x] Implement GET /api/browse/playlist/{playlist_id}
-- [ ] Implement GET /api/lyrics/{video_id}
+- [x] Implement GET /api/lyrics/{video_id}
 - [ ] Add rate limiting (slowapi, 60 req/min per IP)
 - [ ] Commit Phase 3
 
