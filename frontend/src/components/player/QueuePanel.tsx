@@ -71,44 +71,52 @@ export function QueuePanel() {
           initial={{ x: "100%" }}
           animate={{ x: 0 }}
           exit={{ x: "100%" }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
           className="fixed right-0 top-0 bottom-24 w-80 bg-surface border-l border-border z-40 flex flex-col"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <ListMusic className="w-5 h-5 text-text-secondary" />
-              <h2 className="text-title font-semibold">Queue</h2>
-              <span className="text-metadata text-text-secondary">
-                {queue.length} songs
-              </span>
+          <div className="flex items-center justify-between p-5 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-accent/10">
+                <ListMusic className="w-4 h-4 text-accent" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold">Queue</h2>
+                <p className="text-xs text-text-tertiary">
+                  {queue.length} {queue.length === 1 ? "song" : "songs"}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {queue.length > 0 && (
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
                   onClick={clearQueue}
-                  className="p-2 rounded-lg text-text-secondary hover:text-red-400 transition-colors"
+                  className="p-2 rounded-lg text-text-tertiary hover:text-red-400 hover:bg-surface-elevated transition-colors"
                   title="Clear queue"
                 >
                   <Trash2 className="w-4 h-4" />
-                </button>
+                </motion.button>
               )}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setQueueOpen(false)}
-                className="p-2 rounded-lg text-text-secondary hover:text-text-primary transition-colors"
+                className="p-2 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-elevated transition-colors"
               >
                 <X className="w-5 h-5" />
-              </button>
+              </motion.button>
             </div>
           </div>
 
           {/* Queue List */}
           <div className="flex-1 overflow-y-auto">
             {queue.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-text-secondary p-8 text-center">
-                <ListMusic className="w-12 h-12 mb-4 opacity-50" />
-                <p>Your queue is empty</p>
-                <p className="text-metadata mt-1">
+              <div className="flex flex-col items-center justify-center h-full text-text-tertiary p-8 text-center">
+                <div className="w-16 h-16 rounded-full bg-surface-elevated flex items-center justify-center mb-4">
+                  <ListMusic className="w-8 h-8 opacity-50" />
+                </div>
+                <p className="text-sm font-medium">Your queue is empty</p>
+                <p className="text-xs mt-1 text-text-tertiary/70">
                   Add songs to your queue to see them here
                 </p>
               </div>
@@ -137,8 +145,8 @@ export function QueuePanel() {
 
           {/* Now Playing Section */}
           {currentSong && (
-            <div className="p-4 border-t border-border bg-surface-elevated">
-              <div className="text-metadata text-text-secondary uppercase tracking-wider mb-3">
+            <div className="p-4 border-t border-border bg-surface-elevated/50">
+              <div className="text-xs font-semibold text-text-tertiary uppercase tracking-wider mb-3">
                 Now Playing
               </div>
               <div className="flex items-center gap-3">
@@ -149,16 +157,39 @@ export function QueuePanel() {
                     fill
                     className="object-cover"
                   />
+                  {/* Playing indicator overlay */}
+                  {isPlaying && (
+                    <div className="absolute inset-0 bg-accent/20 flex items-center justify-center">
+                      <div className="flex items-end gap-0.5 h-3">
+                        <motion.div
+                          animate={{ height: [3, 8, 3] }}
+                          transition={{ repeat: Infinity, duration: 0.5 }}
+                          className="w-0.5 bg-white rounded-full"
+                        />
+                        <motion.div
+                          animate={{ height: [5, 3, 5] }}
+                          transition={{ repeat: Infinity, duration: 0.5 }}
+                          className="w-0.5 bg-white rounded-full"
+                        />
+                        <motion.div
+                          animate={{ height: [3, 6, 3] }}
+                          transition={{ repeat: Infinity, duration: 0.5 }}
+                          className="w-0.5 bg-white rounded-full"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-body font-medium truncate">
+                  <div className="text-sm font-medium truncate text-text-primary">
                     {currentSong.title}
                   </div>
-                  <div className="text-secondary text-text-secondary truncate">
+                  <div className="text-xs text-text-secondary truncate">
                     {currentSong.artist}
                   </div>
                 </div>
-                <button
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
                   onClick={togglePlay}
                   className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-white"
                 >
@@ -167,7 +198,7 @@ export function QueuePanel() {
                   ) : (
                     <Play className="w-4 h-4 ml-0.5" />
                   )}
-                </button>
+                </motion.button>
               </div>
             </div>
           )}
@@ -214,47 +245,47 @@ function QueueItemRow({
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       className={`
-        group flex items-center gap-3 px-4 py-2 cursor-pointer
-        ${isCurrent ? "bg-accent/10" : "hover:bg-surface-elevated"}
+        group flex items-center gap-2 px-4 py-2.5 cursor-pointer
+        ${isCurrent ? "bg-accent-muted" : "hover:bg-surface-elevated"}
         ${isDraggedOver ? "border-t-2 border-accent" : ""}
-        transition-colors
+        transition-all duration-150
       `}
     >
       {/* Drag Handle */}
-      <div className="text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity cursor-grab">
         <GripVertical className="w-4 h-4" />
       </div>
 
       {/* Index / Play Indicator */}
       <div
         onClick={onPlay}
-        className="w-6 text-center text-metadata text-text-secondary flex-shrink-0"
+        className="w-6 text-center text-xs text-text-tertiary flex-shrink-0"
       >
         {isCurrent && isPlaying ? (
           <div className="flex items-center justify-center gap-0.5 h-4">
             <motion.div
-              animate={{ height: [4, 12, 4] }}
+              animate={{ height: [3, 10, 3] }}
               transition={{ repeat: Infinity, duration: 0.5 }}
-              className="w-1 bg-accent rounded-full"
+              className="w-0.5 bg-accent rounded-full"
             />
             <motion.div
-              animate={{ height: [8, 4, 8] }}
+              animate={{ height: [6, 3, 6] }}
               transition={{ repeat: Infinity, duration: 0.5 }}
-              className="w-1 bg-accent rounded-full"
+              className="w-0.5 bg-accent rounded-full"
             />
             <motion.div
-              animate={{ height: [4, 8, 4] }}
+              animate={{ height: [3, 8, 3] }}
               transition={{ repeat: Infinity, duration: 0.5 }}
-              className="w-1 bg-accent rounded-full"
+              className="w-0.5 bg-accent rounded-full"
             />
           </div>
         ) : (
-          index + 1
+          <span className={isCurrent ? "text-accent" : ""}>{index + 1}</span>
         )}
       </div>
 
       {/* Thumbnail */}
-      <div className="relative w-10 h-10 rounded overflow-hidden flex-shrink-0">
+      <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
         <Image
           src={item.thumbnail}
           alt={item.title}
@@ -266,29 +297,30 @@ function QueueItemRow({
       {/* Song Info */}
       <div className="flex-1 min-w-0" onClick={onPlay}>
         <div
-          className={`text-body truncate ${
+          className={`text-sm font-medium truncate ${
             isCurrent ? "text-accent" : "text-text-primary"
           }`}
         >
           {item.title}
         </div>
-        <div className="text-secondary text-text-secondary truncate">
+        <div className="text-xs text-text-secondary truncate">
           {item.artist}
         </div>
       </div>
 
       {/* Duration */}
-      <div className="text-metadata text-text-secondary">
+      <div className="text-xs text-text-tertiary flex-shrink-0">
         {formatDuration(item.duration)}
       </div>
 
       {/* Remove Button */}
-      <button
+      <motion.button
+        whileTap={{ scale: 0.9 }}
         onClick={onRemove}
-        className="p-1.5 rounded text-text-secondary opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all"
+        className="p-1.5 rounded text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all"
       >
         <Trash2 className="w-4 h-4" />
-      </button>
+      </motion.button>
     </div>
   );
 }

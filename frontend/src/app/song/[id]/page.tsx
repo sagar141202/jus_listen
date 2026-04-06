@@ -94,12 +94,6 @@ export default function SongPage() {
                   <span>{song.album}</span>
                 </>
               )}
-              {song.year && (
-                <>
-                  <span>•</span>
-                  <span>{song.year}</span>
-                </>
-              )}
             </div>
           </div>
         </motion.div>

@@ -4,7 +4,6 @@ import { useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X,
   ChevronDown,
   Play,
   Pause,
@@ -74,10 +73,9 @@ export function FullscreenPlayer() {
       const x = i * barWidth;
       const y = (height - barHeight) / 2;
 
-      // Create gradient
       const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
-      gradient.addColorStop(0, "#ff4444");
-      gradient.addColorStop(1, "#ff6666");
+      gradient.addColorStop(0, "#fa2d48");
+      gradient.addColorStop(1, "#ff6b8a");
 
       ctx.fillStyle = gradient;
       ctx.fillRect(x, y, barWidth - barGap, barHeight);
@@ -119,15 +117,16 @@ export function FullscreenPlayer() {
 
   const hasNext = queue.length > 0 && queueIndex < queue.length - 1;
   const hasPrevious = queue.length > 0 && queueIndex > 0;
+  const progressPercent = duration > 0 ? (progress / duration) * 100 : 0;
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.3 }}
-        className="fixed inset-0 bg-surface z-50 flex flex-col"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.4 }}
+        className="fixed inset-0 bg-background z-50 flex flex-col"
       >
         {/* Background Blur */}
         {currentSong && (
@@ -136,87 +135,96 @@ export function FullscreenPlayer() {
               src={currentSong.thumbnail}
               alt=""
               fill
-              className="object-cover opacity-20 blur-[100px]"
+              className="object-cover opacity-30 blur-[120px] scale-110"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-surface/50 via-surface/80 to-surface" />
+            <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/90 to-background" />
           </div>
         )}
 
         {/* Header */}
-        <div className="relative flex items-center justify-between p-6">
-          <button
+        <div className="relative flex items-center justify-between px-8 py-6">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={toggleFullscreenPlayer}
-            className="p-2 rounded-full hover:bg-surface-elevated transition-colors"
+            className="p-3 rounded-full bg-surface-elevated/50 backdrop-blur-sm hover:bg-surface-elevated transition-colors"
           >
-            <ChevronDown className="w-6 h-6" />
-          </button>
+            <ChevronDown className="w-5 h-5" />
+          </motion.button>
 
-          <div className="text-metadata text-text-secondary uppercase tracking-wider">
+          <div className="text-xs font-medium text-text-secondary uppercase tracking-widest">
             Now Playing
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={toggleLyrics}
-              className={`p-2 rounded-full transition-colors ${
-                lyricsOpen ? "bg-accent/20 text-accent" : "hover:bg-surface-elevated"
+              className={`p-3 rounded-full transition-colors ${
+                lyricsOpen ? "bg-accent-muted text-accent" : "bg-surface-elevated/50 hover:bg-surface-elevated"
               }`}
             >
               <Mic2 className="w-5 h-5" />
-            </button>
-            <button
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={toggleQueue}
-              className={`p-2 rounded-full transition-colors ${
-                queueOpen ? "bg-accent/20 text-accent" : "hover:bg-surface-elevated"
+              className={`p-3 rounded-full transition-colors ${
+                queueOpen ? "bg-accent-muted text-accent" : "bg-surface-elevated/50 hover:bg-surface-elevated"
               }`}
             >
               <ListMusic className="w-5 h-5" />
-            </button>
+            </motion.button>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="relative flex-1 flex items-center justify-center gap-12 px-12"
-        >
+        <div className="relative flex-1 flex items-center justify-center gap-16 px-16 max-w-7xl mx-auto w-full">
           {/* Album Art */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
-            className="relative w-[400px] h-[400px] rounded-2xl overflow-hidden shadow-2xl"
+            initial={{ opacity: 0, x: -60, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ delay: 0.1, duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+            className="relative w-[450px] h-[450px] rounded-3xl overflow-hidden shadow-2xl shadow-black/40"
           >
             {currentSong ? (
-              <Image
-                src={currentSong.thumbnail}
-                alt={currentSong.title}
-                fill
-                className="object-cover"
-              />
+              <>
+                <Image
+                  src={currentSong.thumbnail}
+                  alt={currentSong.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+                {/* Subtle overlay for depth */}
+                <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.3)]" />
+              </>
             ) : (
-              <div className="w-full h-full bg-surface-elevated flex items-center justify-center"
-              >
-                <div className="w-32 h-32 rounded-full bg-surface flex items-center justify-center"
-                >
-                  <div className="w-12 h-12 border-4 border-text-secondary/30 rounded-full" />
+              <div className="w-full h-full bg-surface-elevated flex items-center justify-center">
+                <div className="w-40 h-40 rounded-full bg-surface flex items-center justify-center">
+                  <div className="w-16 h-16 border-4 border-text-tertiary/30 rounded-full" />
                 </div>
               </div>
             )}
           </motion.div>
 
           {/* Song Info & Controls */}
-          <div className="flex flex-col gap-8 max-w-md">
+          <div className="flex flex-col gap-10 max-w-lg flex-1">
             {/* Song Info */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="text-center"
             >
-              <div className="text-3xl font-bold mb-2">
+              <h1 className="text-4xl font-bold mb-3 tracking-tight line-clamp-2">
                 {currentSong?.title || "No song playing"}
-              </div>
-              <div className="text-xl text-text-secondary">
+              </h1>
+              <p className="text-lg text-text-secondary">
                 {currentSong?.artist || "Select a song to play"}
-              </div>
+              </p>
             </motion.div>
 
             {/* Waveform */}
@@ -228,7 +236,7 @@ export function FullscreenPlayer() {
             >
               <canvas
                 ref={canvasRef}
-                width={400}
+                width={450}
                 height={100}
                 className="w-full h-full"
               />
@@ -239,23 +247,22 @@ export function FullscreenPlayer() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="space-y-2"
+              className="space-y-3"
             >
               <div
                 onClick={handleProgressClick}
-                className="h-2 bg-surface-elevated rounded-full cursor-pointer group"
+                className="h-1.5 bg-surface-elevated rounded-full cursor-pointer group relative"
               >
                 <motion.div
-                  className="h-full bg-accent rounded-full relative"
-                  style={{
-                    width: `${duration > 0 ? (progress / duration) * 100 : 0}%`,
-                  }}
-                >
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-accent rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                </motion.div>
+                  className="absolute top-0 left-0 h-full bg-text-primary rounded-full group-hover:bg-accent transition-colors"
+                  style={{ width: `${progressPercent}%` }}
+                />
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ left: `calc(${progressPercent}% - 8px)` }}
+                />
               </div>
-              <div className="flex justify-between text-metadata text-text-secondary"
-              >
+              <div className="flex justify-between text-xs text-text-tertiary font-medium tabular-nums">
                 <span>{formatTime(progress)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
@@ -269,51 +276,57 @@ export function FullscreenPlayer() {
               className="flex items-center justify-center gap-6"
             >
               {/* Shuffle */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={toggleShuffle}
                 className={`p-3 rounded-full transition-colors ${
-                  shuffle ? "text-accent" : "text-text-secondary hover:text-text-primary"
+                  shuffle ? "text-accent bg-accent-muted" : "text-text-tertiary hover:text-text-primary"
                 }`}
               >
                 <Shuffle className="w-5 h-5" />
-              </button>
+              </motion.button>
 
               {/* Previous */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={playPrevious}
                 disabled={!hasPrevious}
                 className="p-3 rounded-full text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                <SkipBack className="w-8 h-8" />
-              </button>
+                <SkipBack className="w-7 h-7" />
+              </motion.button>
 
               {/* Play/Pause */}
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={togglePlay}
                 disabled={!currentSong}
-                className="w-20 h-20 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-20 h-20 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-xl shadow-accent/30"
               >
                 {isPlaying ? (
                   <Pause className="w-8 h-8" />
                 ) : (
                   <Play className="w-8 h-8 ml-1" />
                 )}
-              </button>
+              </motion.button>
 
               {/* Next */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={playNext}
                 disabled={!hasNext}
                 className="p-3 rounded-full text-text-secondary hover:text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                <SkipForward className="w-8 h-8" />
-              </button>
+                <SkipForward className="w-7 h-7" />
+              </motion.button>
 
               {/* Repeat */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={toggleRepeat}
                 className={`p-3 rounded-full transition-colors ${
-                  repeat !== "off" ? "text-accent" : "text-text-secondary hover:text-text-primary"
+                  repeat !== "off" ? "text-accent bg-accent-muted" : "text-text-tertiary hover:text-text-primary"
                 }`}
               >
                 {repeat === "one" ? (
@@ -321,7 +334,7 @@ export function FullscreenPlayer() {
                 ) : (
                   <Repeat className="w-5 h-5" />
                 )}
-              </button>
+              </motion.button>
             </motion.div>
 
             {/* Volume */}
@@ -329,18 +342,19 @@ export function FullscreenPlayer() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="flex items-center gap-4"
+              className="flex items-center justify-center gap-4 max-w-xs mx-auto w-full"
             >
-              <button
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={toggleMute}
-                className="text-text-secondary hover:text-text-primary transition-colors"
+                className="text-text-tertiary hover:text-text-primary transition-colors"
               >
                 {isMuted || volume === 0 ? (
                   <VolumeX className="w-5 h-5" />
                 ) : (
                   <Volume2 className="w-5 h-5" />
                 )}
-              </button>
+              </motion.button>
               <Slider
                 value={isMuted ? 0 : volume}
                 onChange={setVolume}
