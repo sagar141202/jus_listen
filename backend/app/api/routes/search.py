@@ -2,7 +2,7 @@
 Search API routes with caching.
 """
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -22,6 +22,7 @@ limiter = Limiter(key_func=get_remote_address)
 @router.get("")
 @limiter.limit("60/minute")
 async def search(
+    request: Request,
     q: str = Query(..., description="Search query", min_length=1, max_length=200),
     type: str = Query("all", description="Search type: songs, albums, artists, playlists, all"),
     limit: int = Query(20, ge=1, le=50, description="Number of results"),

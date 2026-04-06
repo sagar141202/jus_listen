@@ -2,7 +2,7 @@
 Browse API routes for home feed, artists, albums, playlists.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -25,7 +25,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 @router.get("/home")
 @limiter.limit("60/minute")
-async def browse_home():
+async def browse_home(request: Request):
     """
     Get home feed with quick picks, listen again, trending.
 
@@ -140,7 +140,7 @@ async def browse_home():
 
 @router.get("/song/{video_id}")
 @limiter.limit("60/minute")
-async def browse_song(video_id: str):
+async def browse_song(request: Request, video_id: str):
     """
     Get song details with queue suggestions.
 
@@ -225,7 +225,7 @@ async def browse_song(video_id: str):
 
 @router.get("/artist/{artist_id}")
 @limiter.limit("60/minute")
-async def browse_artist(artist_id: str):
+async def browse_artist(request: Request, artist_id: str):
     """
     Get artist details.
 
@@ -343,7 +343,7 @@ async def browse_artist(artist_id: str):
 
 @router.get("/album/{album_id}")
 @limiter.limit("60/minute")
-async def browse_album(album_id: str):
+async def browse_album(request: Request, album_id: str):
     """
     Get album details.
 
@@ -436,7 +436,7 @@ async def browse_album(album_id: str):
 
 @router.get("/playlist/{playlist_id}")
 @limiter.limit("60/minute")
-async def browse_playlist(playlist_id: str):
+async def browse_playlist(request: Request, playlist_id: str):
     """
     Get playlist details.
 

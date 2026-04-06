@@ -82,7 +82,7 @@ def _stream_info_to_dict(obj: Any) -> dict:
     },
 )
 @limiter.limit("60/minute")
-async def get_stream(video_id: str) -> dict:
+async def get_stream(request: Request, video_id: str) -> dict:
     """
     Get stream URL for a YouTube video.
 
@@ -247,7 +247,7 @@ async def proxy_stream(video_id: str, request: Request) -> StreamingResponse:
 
 @router.get("/{video_id}/health")
 @limiter.limit("60/minute")
-async def check_stream_health(video_id: str) -> dict:
+async def check_stream_health(request: Request, video_id: str) -> dict:
     """
     Check if a stream is healthy and available.
 
