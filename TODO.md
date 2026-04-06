@@ -57,8 +57,8 @@
 - [x] Create audioEngine module (HTMLAudioElement, Web Audio API)
 - [x] Implement playerStore (Zustand)
 - [x] Implement uiStore (Zustand)
-- [ ] Test: Play, pause, seek, queue, lyrics all working
-- [ ] Commit Phase 4
+- [x] Test: Play, pause, seek, queue, lyrics all working
+- [x] Commit Phase 4
 
 ## Phase 5: Auth (Google OAuth + JWT + guest mode)
 - [ ] Set up NextAuth.js with Google OAuth provider
