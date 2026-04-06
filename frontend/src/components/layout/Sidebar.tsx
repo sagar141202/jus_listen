@@ -35,8 +35,10 @@ const libraryItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
-  const { playlists } = usePlayerStore();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  // Playlists will come from user store in Phase 6 - empty for now
+  const playlists: { id: string; title: string }[] = [];
 
   return (
     <

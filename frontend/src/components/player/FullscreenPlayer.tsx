@@ -46,10 +46,9 @@ export function FullscreenPlayer() {
     toggleRepeat,
     toggleMute,
     setVolume,
-    toggleFullscreenPlayer,
   } = usePlayerStore();
 
-  const { lyricsOpen, toggleLyrics, queueOpen, toggleQueue } = useUIStore();
+  const { lyricsOpen, toggleLyrics, queueOpen, toggleQueue, toggleFullscreenPlayer } = useUIStore();
   const { seek, getWaveformData } = useAudioPlayer();
 
   // Waveform visualization
@@ -123,7 +122,7 @@ export function FullscreenPlayer() {
 
   return (
     <AnimatePresence>
-      {<motion.div
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
@@ -354,8 +353,6 @@ export function FullscreenPlayer() {
           </div>
         </div>
       </motion.div>
-    </AnimatePresence>
-  }
     </AnimatePresence>
   );
 }

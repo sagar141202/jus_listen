@@ -49,7 +49,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: tuniq-backend-dev
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-tuniq}:${POSTGRES_PASSWORD:-tuniq}@postgres:5432/${POSTGRES_DB:-tuniq}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tuniq}:${POSTGRES_PASSWORD:-tuniq}@postgres:5432/${POSTGRES_DB:-tuniq}
       - REDIS_URL=redis://redis:6379/0
       - BACKEND_URL=${BACKEND_URL:-http://backend:8000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
